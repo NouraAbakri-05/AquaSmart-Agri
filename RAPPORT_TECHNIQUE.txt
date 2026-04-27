@@ -1,0 +1,488 @@
+================================================================================
+         RAPPORT TECHNIQUE PROFESSIONNEL — PROJET AQUASMART
+         Plateforme Intelligente de Gestion de l'Irrigation Agricole
+================================================================================
+
+Date de redaction  : 19 avril 2026
+Type de document   : Rapport technique complet
+Domaine            : AgriTech / Intelligence Artificielle / IoT
+Statut             : Version 1.0
+
+================================================================================
+TABLE DES MATIERES
+================================================================================
+
+  1.  Presentation generale du projet
+  2.  Objectifs et problematique resolue
+  3.  Architecture technique
+  4.  Structure des fichiers
+  5.  Base de donnees
+  6.  Modeles d'intelligence artificielle
+  7.  API Backend — Endpoints disponibles
+  8.  Fonctionnalites du tableau de bord
+  9.  Systeme d'alertes
+  10. Panneau Analytiques
+  11. Panneau Parametres
+  12. Interface utilisateur et design
+  13. Flux de donnees (Data Flow)
+  14. Gestion de l'etat cote client
+  15. Performances et intervalles de mise a jour
+  16. Securite et stockage local
+  17. Limites identifiees et axes d'amelioration
+  18. Conclusion
+
+================================================================================
+1. PRESENTATION GENERALE DU PROJET
+================================================================================
+
+AquaSmart est une plateforme web de gestion intelligente de l'irrigation
+agricole, pilotee par l'intelligence artificielle. Elle permet aux agriculteurs
+et aux gestionnaires de domaines agricoles de surveiller en temps reel l'etat
+de leurs parcelles, d'obtenir des recommandations automatiques d'irrigation
+generees par des modeles de machine learning, et d'analyser l'historique de
+consommation en eau.
+
+La plateforme repose sur une architecture client-serveur : un backend Python
+(Flask) assure le traitement des donnees et l'inference IA, tandis qu'un
+frontend HTML/CSS/JavaScript offre un tableau de bord interactif et responsive.
+
+================================================================================
+2. OBJECTIFS ET PROBLEMATIQUE RESOLUE
+================================================================================
+
+PROBLEMATIQUE :
+  L'irrigation manuelle dans l'agriculture est souvent inefficace : trop d'eau
+  gachee ou au contraire insuffisante pour les cultures, entrainant des pertes
+  de rendement et une consommation excessive des ressources hydriques.
+
+OBJECTIFS DU PROJET :
+  - Automatiser les decisions d'irrigation grace a l'IA
+  - Optimiser la consommation en eau par parcelle et par culture
+  - Offrir une visibilite en temps reel sur les conditions du sol et de l'air
+  - Centraliser la gestion de plusieurs zones agricoles dans une seule interface
+  - Permettre une irrigation manuelle de secours si necessaire
+  - Exporter les donnees pour une analyse externe (CSV)
+
+================================================================================
+3. ARCHITECTURE TECHNIQUE
+================================================================================
+
+COUCHE BACKEND :
+  - Langage         : Python 3.x
+  - Framework web   : Flask
+  - Base de donnees : SQLite3 (fichier sensors.db)
+  - Machine Learning: scikit-learn (Random Forest)
+  - Serialisation   : joblib (fichiers .pkl)
+  - Traitement data : pandas, numpy
+
+COUCHE FRONTEND :
+  - Balisage       : HTML5
+  - Styles         : CSS3 (Grid, Flexbox, Variables CSS, Dark Mode)
+  - Scripts        : JavaScript Vanilla ES6+
+  - Visualisation  : Chart.js 4.4.0
+  - Typographie    : Google Fonts (Inter)
+
+MODELES IA :
+  - model_irrigation.pkl  — Classificateur (irriguér ou non)
+  - model_water.pkl       — Regresseur (quantite d'eau en litres)
+  - plant_map.pkl         — Encodage des types de cultures
+
+================================================================================
+4. STRUCTURE DES FICHIERS
+================================================================================
+
+agritech_project/
+|
+|-- server.py               Serveur Flask principal (API + routes)
+|-- init_db.py              Initialisation de la base de donnees
+|-- train_models.py         Entrainement des modeles IA
+|-- synthetic_data.py       Generation de donnees synthetiques de test
+|-- sensor_simulator.py     Simulateur de capteurs IoT
+|-- sensors.db              Base de donnees SQLite
+|-- model_irrigation.pkl    Modele de classification (1,45 Mo)
+|-- model_water.pkl         Modele de regression (26,77 Mo)
+|-- plant_map.pkl           Encodage des plantes (472 octets)
+|-- README.docx             Documentation du projet
+|-- smart_irrigation_ai_full_guide.pdf  Guide complet IA
+|
+|-- static/
+|   |-- style.css           Feuille de styles globale
+|   +-- script.js           Controleur JavaScript frontend
+|
++-- templates/
+    +-- index.html          Page HTML principale (SPA)
+
+================================================================================
+5. BASE DE DONNEES
+================================================================================
+
+Fichier : sensors.db (SQLite)
+
+TABLE : zones
+  - id        INTEGER PRIMARY KEY AUTOINCREMENT
+  - name      TEXT    — Nom de la zone / parcelle
+  - plant     TEXT    — Type de culture (tomate, pomme de terre, mais)
+  - hectares  REAL    — Superficie en hectares
+
+TABLE : sensor_data
+  - id          INTEGER PRIMARY KEY AUTOINCREMENT
+  - zone_id     INTEGER — Cle etrangere vers zones.id
+  - soil        REAL    — Humidite du sol en % (10 a 90%)
+  - temperature REAL    — Temperature en degres Celsius (15 a 45 C)
+  - humidity    REAL    — Humidite de l'air en % (20 a 90%)
+  - irrigate    INTEGER — Decision binaire (0 = Non, 1 = Oui)
+  - water_need  REAL    — Besoin en eau calcule (litres)
+  - timestamp   DATETIME — Horodatage automatique
+
+Relations : sensor_data.zone_id -> zones.id (contrainte de cle etrangere active)
+
+================================================================================
+6. MODELES D'INTELLIGENCE ARTIFICIELLE
+================================================================================
+
+--- 6.1 GENERATION DES DONNEES D'ENTRAINEMENT ---
+
+Script : synthetic_data.py
+  - Creation de 3 zones echantillons
+  - Generation de 3 000 enregistrements synthetiques
+  - Regle metier appliquee :
+      score = (100 - soil) * 0.5 + temperature * 0.3 - humidity * 0.2
+      Si score > 35 : irriguer = 1
+  - Cultures supportees : tomate (0), pomme de terre (1), mais (2)
+
+--- 6.2 ENTRAINEMENT ---
+
+Script : train_models.py
+  - Lecture de toutes les donnees de sensor_data
+  - Encodage des noms de cultures en codes numeriques
+  - Division 80/20 (entrainement / test)
+  - 100 arbres par foret aleatoire
+
+--- 6.3 VARIABLES D'ENTREE (5 caracteristiques) ---
+
+  1. soil        — Humidite du sol (%)
+  2. temperature — Temperature (C)
+  3. humidity    — Humidite de l'air (%)
+  4. hectares    — Superficie de la zone
+  5. plant_code  — Code de la culture (0, 1 ou 2)
+
+--- 6.4 SORTIES DES MODELES ---
+
+  Modele 1 (Classificateur) : Faut-il irriguer ? (0 = Non / 1 = Oui)
+  Modele 2 (Regresseur)     : Quantite d'eau necessaire (en litres)
+
+--- 6.5 LOGIQUE D'INFERENCE (endpoint /predict_live) ---
+
+  1. Reception des donnees capteur : sol, temperature, humidite, zone_id
+  2. Recuperation des infos de zone (culture, superficie)
+  3. Encodage de la culture en code numerique
+  4. Construction du vecteur de caracteristiques
+  5. Prediction de la decision d'irrigation (0 ou 1)
+  6. Prediction du volume d'eau total necessaire (litres)
+  7. Calcul : eau_par_hectare = eau_totale / superficie
+  8. Sauvegarde en base de donnees
+  9. Retour des resultats au frontend (JSON)
+
+================================================================================
+7. API BACKEND — ENDPOINTS DISPONIBLES
+================================================================================
+
+Serveur Flask : http://127.0.0.1:5000
+
+  Methode  | Endpoint                    | Description
+  ---------|-----------------------------|------------------------------------------
+  GET      | /                           | Affichage du tableau de bord HTML
+  POST     | /add_zone                   | Creation d'une nouvelle zone agricole
+  DELETE   | /delete_zone/<zone_id>      | Suppression d'une zone et son historique
+  GET      | /zones                      | Liste de toutes les zones (JSON)
+  POST     | /predict_live               | Prediction IA sur donnees capteur
+  GET      | /latest/<zone_id>           | Derniere prediction pour une zone
+  GET      | /history/<zone_id>          | 20 derniers releves d'une zone
+  GET      | /stats/<zone_id>            | Statistiques agregees d'une zone
+  GET      | /alerts                     | 30 derniers declenchements d'irrigation
+  POST     | /manual_irrigate/<zone_id>  | Declenchement manuel de l'irrigation
+
+================================================================================
+8. FONCTIONNALITES DU TABLEAU DE BORD
+================================================================================
+
+--- 8.1 CARTE HERO ---
+
+  - Affichage de la zone active selectionnee
+  - Badge de decision IA (Irrigation requise / Sol adequat)
+  - Indicateur de statut de connexion en temps reel (animation pulsation)
+
+--- 8.2 JAUGES EN TEMPS REEL (4 cartes) ---
+
+  - Humidite du sol    : echelle 0-100%
+  - Temperature        : echelle 15-50 C
+  - Humidite de l'air  : echelle 0-100%
+  - Score de sante de zone : 0-100 (indicateur global)
+
+--- 8.3 CARTE BESOIN EN EAU ---
+
+  - Litres par hectare necessaires
+  - Volume total pour la zone entiere
+
+--- 8.4 GRILLE DE STATISTIQUES ---
+
+  - Nombre total de releves capteurs
+  - Nombre total de declenchements d'irrigation
+  - Humidite moyenne du sol
+  - Consommation totale en eau (litres)
+
+--- 8.5 GRAPHIQUE DE FLUX EN DIRECT ---
+
+  - Courbe des 20 derniers releves
+  - 3 series : humidite sol, temperature, humidite air
+  - Mise a jour automatique toutes les 2 secondes
+
+--- 8.6 JOURNAL DES RELEVES ---
+
+  - Tableau des releves recents
+  - Colonnes : horodatage, humidite sol, temperature, humidite, decision, eau
+  - Decision affichee avec code couleur (vert = adequat, orange = irriguer)
+
+--- 8.7 BOUTON D'IRRIGATION MANUELLE ---
+
+  - Declenchement immediat de l'irrigation
+  - Confirmation par notification toast
+
+================================================================================
+9. SYSTEME D'ALERTES
+================================================================================
+
+  - Carte hero resumant l'ensemble des alertes actives
+  - Liste des 30 derniers evenements d'irrigation declenchee
+  - Chaque alerte affiche :
+      * Nom de la zone + humidite du sol
+      * Temperature + humidite de l'air
+      * Type de culture
+      * Horodatage exact
+  - Badge de notification sur l'icone de cloche (topbar)
+  - Badge supplementaire sur le lien de navigation "Alertes"
+  - Seuils personnalisables par l'utilisateur :
+      * Humidite sol minimale  : 5-70%    (defaut : 30%)
+      * Temperature maximale   : 25-50 C  (defaut : 38 C)
+      * Humidite air minimale  : 5-60%    (defaut : 25%)
+
+================================================================================
+10. PANNEAU ANALYTIQUES
+================================================================================
+
+  - Metriques d'efficacite :
+      * Pourcentage d'efficacite d'irrigation
+      * Volume moyen par evenement d'irrigation
+      * Plage d'humidite du sol (min-max)
+      * Temperature moyenne du terrain
+
+  - Graphique de consommation en eau :
+      * Histogramme (barres) par releve
+      * Volume d'eau utilise par lecture
+
+  - Graphique circulaire (donut) :
+      * Ratio irrigations / sol adequat
+      * Visualisation de la repartition des decisions IA
+
+================================================================================
+11. PANNEAU PARAMETRES
+================================================================================
+
+  - Gestion des zones :
+      * Tableau de toutes les zones enregistrees
+      * Possibilite de supprimer une zone
+      * Formulaire d'ajout de nouvelle zone (nom, culture, superficie)
+
+  - Seuils d'alerte personnalisables :
+      * Humidite sol minimale
+      * Temperature maximale
+      * Humidite air minimale
+      * Persistance via localStorage du navigateur
+
+  - Export CSV :
+      * Telechargement de l'historique complet d'une zone au format CSV
+      * Analyse externe possible (Excel, Python, etc.)
+
+  - Section "A propos" :
+      * Informations sur la plateforme
+      * Description des fonctionnalites principales
+
+================================================================================
+12. INTERFACE UTILISATEUR ET DESIGN
+================================================================================
+
+--- 12.1 PALETTE DE COULEURS ---
+
+  Primaire (Cyan/Bleu)  : #0284c7 — #38bdf8
+  Turquoise             : #14b8a6
+  Succes (Vert)         : #22c55e
+  Avertissement (Ambre) : #fbbf24
+  Erreur (Rouge)        : #ef4444
+  Sidebar sombre        : #0a1628
+  Surface claire        : #ffffff
+
+--- 12.2 FONCTIONNALITES UI ---
+
+  - Mode sombre / clair : bascule avec persistance localStorage (cle: aq-theme)
+  - Design responsive   : mobile < 480px, tablette < 768px, desktop 900px+
+  - Navigation sidebar  : 4 sections (Tableau de bord, Analytiques, Alertes, Parametres)
+  - Widget meteo        : conditions simulees basees sur les donnees capteurs
+  - Selecteur de zone   : menu deroulant dans la topbar
+  - Notifications toast : messages succes / erreur / info (duree 3,5 secondes)
+  - Menu hamburger      : navigation mobile
+  - Contraste           : ratio minimum 3:1 en mode clair et sombre
+
+--- 12.3 COMPOSANTS VISUELS ---
+
+  - Jauges circulaires  (CSS/SVG)
+  - Grilles de statistiques (CSS Grid)
+  - Tableaux de donnees avec survol
+  - Boites de dialogue modales
+  - Boutons animes
+  - Badges de notification
+
+================================================================================
+13. FLUX DE DONNEES (DATA FLOW)
+================================================================================
+
+  [Capteurs IoT / Simulateur]
+          |
+          | POST avec donnees aleatoires (sol, temperature, humidite)
+          v
+  [Endpoint /predict_live — Flask]
+          |
+          | Chargement des modeles IA
+          v
+  [Inference ML]
+          |
+          | Classification (irriguer?) + Regression (litres?)
+          v
+  [Sauvegarde en base SQLite]
+          |
+          | Insertion dans sensor_data
+          v
+  [Polling Frontend toutes les 2 secondes]
+          |
+          | Appels /latest, /history, /stats
+          v
+  [Mise a jour du tableau de bord]
+          |
+          | Graphiques, jauges, tableaux, alertes
+          v
+  [Interface Utilisateur]
+
+================================================================================
+14. GESTION DE L'ETAT COTE CLIENT
+================================================================================
+
+Variables JavaScript principales :
+  - selectedZoneId  — Zone actuellement selectionnee
+  - lastLiveData    — Derniere prediction recue
+  - thresholds      — Seuils d'alerte (persistants via localStorage)
+  - liveInterval    — Intervalle de polling (2 secondes)
+  - activeTab       — Panneau actif (dashboard / analytics / alerts / settings)
+
+Objets graphiques (Chart.js) :
+  - historyChart    — Courbe (sol, temperature, humidite — 20 derniers releves)
+  - waterChart      — Histogramme (eau par releve)
+  - ratioChart      — Donut (ratio irrigation / adequat)
+
+Fonctions par categorie :
+  Navigation    : setTab(), toggleSidebar()
+  Chargement    : loadZones(), loadLive(), loadHistory(), loadStats(),
+                  loadAnalytics(), loadAlerts()
+  Rendu         : renderLive(), renderTable(), renderAnalytics(),
+                  renderSettingsZones()
+  Zones         : addZone(), deleteZone(), selectZone()
+  Parametres    : updateThreshold(), exportCSV()
+  UI utilitaires: showToast(), setText(), setGauge(), setStatus()
+
+================================================================================
+15. PERFORMANCES ET INTERVALLES DE MISE A JOUR
+================================================================================
+
+  Intervalle                         | Frequence
+  -----------------------------------|------------------
+  Polling donnees tableau de bord    | Toutes les 2 s
+  Rafraichissement liste des zones   | Toutes les 10 s
+  Simulation vitesse du vent         | Toutes les 15 s
+  Affichage "derniere mise a jour"   | Toutes les 5 s
+  Duree d'affichage notification     | 3,5 secondes
+
+Donnees conservees :
+  - Historique affiche    : 20 derniers releves
+  - Alertes affichees     : 30 derniers evenements
+  - Aucun nettoyage automatique configure
+
+Memoire occupee par les modeles :
+  - model_irrigation.pkl  :  ~1,45 Mo
+  - model_water.pkl       : ~26,77 Mo
+  - plant_map.pkl         :   ~0,47 Ko
+  - Total en memoire      : ~28,22 Mo (charge au demarrage du serveur)
+
+================================================================================
+16. SECURITE ET STOCKAGE LOCAL
+================================================================================
+
+Stockage navigateur (localStorage) :
+  - aq-theme       : preference theme clair/sombre
+  - aq-thresholds  : seuils d'alerte personnalises
+
+Base de donnees :
+  - Contraintes de cles etrangeres activees
+  - Persistance par fichier SQLite local
+
+Points de vigilance (a ameliorer) :
+  - Aucun systeme d'authentification / autorisation implemente
+  - Mode debug Flask active (a desactiver en production)
+  - CORS non configure explicitement
+  - Requetes SQL a verifier pour la resistance aux injections
+
+================================================================================
+17. LIMITES IDENTIFIEES ET AXES D'AMELIORATION
+================================================================================
+
+  N  | Limite actuelle                          | Amelioration suggeree
+  ---|------------------------------------------|-----------------------------
+  1  | Modeles entraines sur 3 zones seulement  | Diversifier les donnees
+  2  | Pas d'authentification utilisateur       | Ajouter JWT / OAuth2
+  3  | Seuils globaux (pas par zone)            | Seuils individuels par zone
+  4  | Meteo simulee (pas reelle)               | Integrer une API meteo
+  5  | Pas de nettoyage automatique BDD         | Archivage periodique
+  6  | Mode debug Flask en production           | Desactiver pour deploiement
+  7  | Pas de gestion des erreurs capteur       | Validation et rejet donnees
+  8  | Historique limite a 20 releves           | Pagination ou scroll infini
+  9  | Pas de mode hors-ligne                   | Service Worker / PWA
+  10 | Capteurs simulés uniquement              | Connexion capteurs IoT reels
+
+================================================================================
+18. CONCLUSION
+================================================================================
+
+AquaSmart est une plateforme AgriTech complete et fonctionnelle qui demontre
+l'application pratique de l'intelligence artificielle dans le domaine de
+l'agriculture de precision.
+
+Le projet integre avec succes :
+  - Des modeles de machine learning (Random Forest) pour la prise de decision
+  - Une interface web moderne, responsive et en temps reel
+  - Une architecture API RESTful claire et extensible
+  - Un systeme d'alertes configurable par l'utilisateur
+  - Des visualisations de donnees riches et interactives
+  - Un simulateur IoT pour les tests sans materiel physique
+
+La separation claire entre le backend Python (inference IA + persistence) et
+le frontend JavaScript (visualisation + interaction) garantit une bonne
+maintenabilite et une extensibilite future.
+
+Avec les ameliorations proposees (authentification, API meteo reelle, capteurs
+IoT physiques), cette plateforme peut aisement evoluer vers une solution
+deployable en environnement de production agricole reel.
+
+================================================================================
+FIN DU RAPPORT TECHNIQUE
+================================================================================
+  Projet     : AquaSmart — Gestion Intelligente de l'Irrigation
+  Rapport    : RAPPORT_TECHNIQUE.txt
+  Redige le  : 19 avril 2026
+================================================================================
