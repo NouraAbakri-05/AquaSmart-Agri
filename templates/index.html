@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AquaSmart — Intelligent Irrigation Platform</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="app" id="app">
+
+    <!-- ══════════════════ SIDEBAR ══════════════════ -->
+    <aside class="sidebar" id="sidebar">
+
+        <div class="sb-logo">
+            <svg class="sb-drop" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C12 2 4 10.5 4 15a8 8 0 0 0 16 0C20 10.5 12 2 12 2z"/>
+            </svg>
+            <div>
+                <div class="sb-brand">AquaSmart</div>
+                <div class="sb-tagline">Irrigation AI</div>
+            </div>
+        </div>
+
+        <div class="sb-section-label">Navigation</div>
+        <nav class="sb-nav">
+            <button id="nav-dashboard" class="nav-item active" onclick="setTab('dashboard')">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+                    <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+                </svg>
+                Dashboard
+            </button>
+            <button id="nav-analytics" class="nav-item" onclick="setTab('analytics')">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                    <polyline points="17 6 23 6 23 12"/>
+                </svg>
+                Analytics
+            </button>
+            <button id="nav-alerts" class="nav-item" onclick="setTab('alerts')">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                </svg>
+                Alerts
+                <span class="nav-badge" id="navAlertBadge" style="display:none">0</span>
+            </button>
+            <button id="nav-settings" class="nav-item" onclick="setTab('settings')">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/>
+                    <line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/>
+                    <line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/>
+                    <line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/>
+                    <line x1="17" y1="16" x2="23" y2="16"/>
+                </svg>
+                Settings
+            </button>
+        </nav>
+
+        <div class="sb-section-label" style="margin-top:auto">Field Conditions</div>
+        <div class="sb-weather" id="sbWeather">
+            <div class="sw-main">
+                <span class="sw-icon" id="swIcon">🌤️</span>
+                <div>
+                    <div class="sw-temp" id="swTemp">--°C</div>
+                    <div class="sw-cond" id="swCond">Awaiting data</div>
+                </div>
+            </div>
+            <div class="sw-details">
+                <div class="sw-detail"><span>💧</span><span id="swHum">--%</span></div>
+                <div class="sw-detail"><span>🌬️</span><span id="swWind">-- km/h</span></div>
+                <div class="sw-detail"><span>🌡️</span><span id="swDew">-- dew</span></div>
+            </div>
+        </div>
+
+        <div class="sb-footer">
+            <button class="dark-toggle" id="darkToggle" onclick="toggleDark()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                </svg>
+                <span id="darkLabel">Dark Mode</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- ══════════════════ APP BODY ══════════════════ -->
+    <div class="app-body">
+
+        <!-- TOPBAR -->
+        <header class="topbar">
+            <div class="tb-left">
+                <button class="hamburger" onclick="toggleSidebar()" aria-label="Toggle menu">
+                    <span></span><span></span><span></span>
+                </button>
+                <div class="tb-title" id="tbTitle">Dashboard</div>
+            </div>
+            <div class="tb-right">
+                <div class="zone-sel-wrap">
+                    <svg class="zone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                        <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/>
+                        <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                    <select id="zoneSelect" onchange="selectZone()"></select>
+                </div>
+                <div class="status-pill">
+                    <span class="pulse-dot" id="statusDot"></span>
+                    <span id="statusText">Connecting...</span>
+                </div>
+                <button class="notif-btn" onclick="setTab('alerts')" id="notifBtn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                    </svg>
+                    <span class="notif-badge" id="notifBadge" style="display:none">0</span>
+                </button>
+                <button class="btn-primary btn-sm" onclick="openModal()">+ Add Zone</button>
+                <button class="btn-danger btn-sm" id="deleteBtn" onclick="deleteZone()" style="display:none">Delete Zone</button>
+            </div>
+        </header>
+
+        <!-- PANELS WRAPPER -->
+        <main class="panels-wrap">
+
+            <!-- EMPTY STATE -->
+            <div id="noZones" class="empty-state" style="display:none">
+                <div class="empty-card">
+                    <div class="empty-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="60" height="60">
+                            <path d="M12 2C12 2 4 10.5 4 15a8 8 0 0 0 16 0C20 10.5 12 2 12 2z"/>
+                        </svg>
+                    </div>
+                    <h2>No zones yet</h2>
+                    <p>Add your first irrigation zone to start monitoring your fields with AI precision.</p>
+                    <button class="btn-primary" onclick="openModal()">+ Add Your First Zone</button>
+                </div>
+            </div>
+
+            <!-- ═══ PANEL: DASHBOARD ═══ -->
+            <div id="panel-dashboard" class="panel active">
+
+                <!-- Hero -->
+                <div class="hero-card" id="heroCard">
+                    <div class="hero-orbs"></div>
+                    <div class="hero-content">
+                        <div class="hero-left">
+                            <div class="hero-eyebrow">Active Zone</div>
+                            <div class="hero-zone" id="heroZone">—</div>
+                            <div class="hero-chips">
+                                <span class="chip" id="heroPlant">—</span>
+                                <span class="chip" id="heroArea">—</span>
+                                <span class="chip chip-time" id="lastUpdated">No data yet</span>
+                            </div>
+                        </div>
+                        <div class="hero-right">
+                            <div class="decision-badge" id="decisionBadge">
+                                <span class="d-icon" id="decisionIcon">⏳</span>
+                                <span id="decisionTitle">Waiting...</span>
+                            </div>
+                            <div class="d-sub" id="decisionSub">Awaiting sensor data</div>
+                            <button class="btn-irrigate" id="manualBtn" onclick="triggerManual()" style="display:none">
+                                💧 Trigger Irrigation
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gauges -->
+                <div class="gauges-row">
+                    <div class="gauge-card soil-card">
+                        <div class="gc-emoji">🌱</div>
+                        <div class="gauge-wrap">
+                            <svg class="gauge-svg" viewBox="0 0 100 100">
+                                <circle class="g-track" cx="50" cy="50" r="38"/>
+                                <circle class="g-fill g-soil" id="gaugeSoil" cx="50" cy="50" r="38"/>
+                            </svg>
+                            <div class="gauge-center">
+                                <span class="g-num" id="valSoil">--</span>
+                                <span class="g-unit">%</span>
+                            </div>
+                        </div>
+                        <div class="gc-label">Soil Moisture</div>
+                        <div class="gc-status" id="soilStatus">—</div>
+                    </div>
+
+                    <div class="gauge-card temp-card">
+                        <div class="gc-emoji">🌡️</div>
+                        <div class="gauge-wrap">
+                            <svg class="gauge-svg" viewBox="0 0 100 100">
+                                <circle class="g-track" cx="50" cy="50" r="38"/>
+                                <circle class="g-fill g-temp" id="gaugeTemp" cx="50" cy="50" r="38"/>
+                            </svg>
+                            <div class="gauge-center">
+                                <span class="g-num" id="valTemp">--</span>
+                                <span class="g-unit">°C</span>
+                            </div>
+                        </div>
+                        <div class="gc-label">Temperature</div>
+                        <div class="gc-status" id="tempStatus">—</div>
+                    </div>
+
+                    <div class="gauge-card hum-card">
+                        <div class="gc-emoji">💧</div>
+                        <div class="gauge-wrap">
+                            <svg class="gauge-svg" viewBox="0 0 100 100">
+                                <circle class="g-track" cx="50" cy="50" r="38"/>
+                                <circle class="g-fill g-hum" id="gaugeHum" cx="50" cy="50" r="38"/>
+                            </svg>
+                            <div class="gauge-center">
+                                <span class="g-num" id="valHum">--</span>
+                                <span class="g-unit">%</span>
+                            </div>
+                        </div>
+                        <div class="gc-label">Humidity</div>
+                        <div class="gc-status" id="humStatus">—</div>
+                    </div>
+
+                    <div class="gauge-card health-card">
+                        <div class="gc-emoji">❤️</div>
+                        <div class="gauge-wrap">
+                            <svg class="gauge-svg" viewBox="0 0 100 100">
+                                <circle class="g-track" cx="50" cy="50" r="38"/>
+                                <circle class="g-fill g-health" id="gaugeHealth" cx="50" cy="50" r="38"/>
+                            </svg>
+                            <div class="gauge-center">
+                                <span class="g-num" id="healthScore">--</span>
+                                <span class="g-unit">/100</span>
+                            </div>
+                        </div>
+                        <div class="gc-label">Zone Health</div>
+                        <div class="gc-status" id="healthStatus">—</div>
+                    </div>
+                </div>
+
+                <!-- Water + Stats -->
+                <div class="mid-row">
+                    <div class="water-card">
+                        <div class="wc-top">
+                            <div class="wc-icon-wrap">💧</div>
+                            <div class="wc-head">
+                                <div class="wc-title">Water Requirement</div>
+                                <div class="wc-sub" id="waterPlant">—</div>
+                            </div>
+                        </div>
+                        <div class="wc-vals">
+                            <div class="wc-item">
+                                <div class="wc-num" id="waterPerHa">--</div>
+                                <div class="wc-lbl">L / hectare</div>
+                            </div>
+                            <div class="wc-sep"></div>
+                            <div class="wc-item">
+                                <div class="wc-num big" id="waterTotal">--</div>
+                                <div class="wc-lbl">Total (L)</div>
+                            </div>
+                        </div>
+                        <div class="wc-area-row">
+                            <span>📐</span>
+                            <span id="valHa">--</span> hectares monitored
+                        </div>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card s-cyan">
+                            <div class="sc-num" id="statReadings">--</div>
+                            <div class="sc-lbl">Total Readings</div>
+                            <span class="sc-bg">📊</span>
+                        </div>
+                        <div class="stat-card s-red">
+                            <div class="sc-num" id="statIrrigations">--</div>
+                            <div class="sc-lbl">Irrigations</div>
+                            <span class="sc-bg">🚿</span>
+                        </div>
+                        <div class="stat-card s-amber">
+                            <div class="sc-num" id="statAvgSoil">--</div>
+                            <div class="sc-lbl">Avg Soil</div>
+                            <span class="sc-bg">🌱</span>
+                        </div>
+                        <div class="stat-card s-teal">
+                            <div class="sc-num" id="statTotalWater">--</div>
+                            <div class="sc-lbl">Total Water</div>
+                            <span class="sc-bg">💦</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- History Chart -->
+                <div class="content-card">
+                    <div class="cc-header">
+                        <div>
+                            <div class="cc-title">Sensor Readings — Live Feed</div>
+                            <div class="cc-sub">Last 20 readings · updates every 2 seconds</div>
+                        </div>
+                        <div class="chart-legend">
+                            <span><span class="leg-dot" style="background:#22d3ee"></span>Soil</span>
+                            <span><span class="leg-dot" style="background:#f59e0b"></span>Temp</span>
+                            <span><span class="leg-dot" style="background:#818cf8"></span>Humidity</span>
+                        </div>
+                    </div>
+                    <div class="chart-wrap"><canvas id="historyChart"></canvas></div>
+                </div>
+
+                <!-- Table -->
+                <div class="content-card">
+                    <div class="cc-header">
+                        <div>
+                            <div class="cc-title">Reading Log</div>
+                            <div class="cc-sub">Most recent first</div>
+                        </div>
+                    </div>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>Soil %</th>
+                                    <th>Temp °C</th>
+                                    <th>Humidity %</th>
+                                    <th>Water (L)</th>
+                                    <th>Decision</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyBody">
+                                <tr><td colspan="6" class="empty-row">No readings yet</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div><!-- /panel-dashboard -->
+
+            <!-- ═══ PANEL: ANALYTICS ═══ -->
+            <div id="panel-analytics" class="panel">
+
+                <div class="an-summary">
+                    <div class="an-stat">
+                        <div class="an-num" id="anEfficiency">--%</div>
+                        <div class="an-lbl">Irrigation Efficiency</div>
+                        <div class="an-sub" id="anEffSub">% of readings without irrigation</div>
+                    </div>
+                    <div class="an-stat">
+                        <div class="an-num" id="anAvgWater">-- L</div>
+                        <div class="an-lbl">Avg Water / Event</div>
+                        <div class="an-sub">Per irrigation trigger</div>
+                    </div>
+                    <div class="an-stat">
+                        <div class="an-num" id="anPeakSoil">--%</div>
+                        <div class="an-lbl">Soil Range</div>
+                        <div class="an-sub" id="anSoilRange">Min – Max recorded</div>
+                    </div>
+                    <div class="an-stat">
+                        <div class="an-num" id="anAvgTemp">--°C</div>
+                        <div class="an-lbl">Avg Temperature</div>
+                        <div class="an-sub">Field ambient average</div>
+                    </div>
+                </div>
+
+                <div class="an-charts">
+                    <div class="content-card">
+                        <div class="cc-header">
+                            <div>
+                                <div class="cc-title">Water Usage per Reading</div>
+                                <div class="cc-sub">Red = irrigation triggered, green = no irrigation</div>
+                            </div>
+                        </div>
+                        <div class="chart-wrap"><canvas id="waterChart"></canvas></div>
+                    </div>
+                    <div class="content-card donut-card">
+                        <div class="cc-header">
+                            <div>
+                                <div class="cc-title">Irrigation Ratio</div>
+                                <div class="cc-sub">Irrigated vs adequate readings</div>
+                            </div>
+                        </div>
+                        <div class="donut-wrap">
+                            <canvas id="ratioChart"></canvas>
+                            <div class="donut-label">
+                                <div class="donut-pct" id="donutPct">--</div>
+                                <div class="donut-sub">irrigated</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- /panel-analytics -->
+
+            <!-- ═══ PANEL: ALERTS ═══ -->
+            <div id="panel-alerts" class="panel">
+                <div class="alerts-hero">
+                    <div class="ah-left">
+                        <div class="ah-count" id="ahCount">0</div>
+                        <div class="ah-label">Irrigation Alerts</div>
+                        <div class="ah-sub">All zones · last 30 events</div>
+                    </div>
+                    <div class="ah-right">
+                        <div class="alert-mini-stat">
+                            <div id="ahLastZone">—</div>
+                            <div>Last affected zone</div>
+                        </div>
+                        <div class="alert-mini-stat">
+                            <div id="ahLastTime">—</div>
+                            <div>Last alert time</div>
+                        </div>
+                    </div>
+                </div>
+                <div id="alertsList" class="alerts-list">
+                    <div class="alerts-empty">No irrigation alerts yet. Your fields are happy! 🌿</div>
+                </div>
+            </div><!-- /panel-alerts -->
+
+            <!-- ═══ PANEL: SETTINGS ═══ -->
+            <div id="panel-settings" class="panel">
+                <div class="settings-layout">
+
+                    <div class="settings-card">
+                        <div class="sc-head">
+                            <div class="sc-title">Zone Management</div>
+                            <button class="btn-primary btn-sm" onclick="openModal()">+ Add Zone</button>
+                        </div>
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Name</th><th>Crop</th><th>Hectares</th><th>Action</th></tr></thead>
+                                <tbody id="settingsZonesBody">
+                                    <tr><td colspan="4" class="empty-row">No zones</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="settings-card">
+                        <div class="sc-head">
+                            <div class="sc-title">Alert Thresholds</div>
+                            <span class="sc-badge">Saved locally</span>
+                        </div>
+                        <div class="threshold-item">
+                            <div class="th-row">
+                                <label>Min Soil Moisture</label>
+                                <span class="th-val" id="thSoilVal">30%</span>
+                            </div>
+                            <input type="range" id="thSoil" min="5" max="70" value="30"
+                                   oninput="updateThreshold('soil', this.value)">
+                            <div class="th-hint">Alert when soil drops below this level</div>
+                        </div>
+                        <div class="threshold-item">
+                            <div class="th-row">
+                                <label>Max Temperature</label>
+                                <span class="th-val" id="thTempVal">38°C</span>
+                            </div>
+                            <input type="range" id="thTemp" min="25" max="50" value="38"
+                                   oninput="updateThreshold('temp', this.value)">
+                            <div class="th-hint">Alert when temperature exceeds this level</div>
+                        </div>
+                        <div class="threshold-item">
+                            <div class="th-row">
+                                <label>Min Humidity</label>
+                                <span class="th-val" id="thHumVal">25%</span>
+                            </div>
+                            <input type="range" id="thHum" min="5" max="60" value="25"
+                                   oninput="updateThreshold('hum', this.value)">
+                            <div class="th-hint">Alert when air humidity drops below this level</div>
+                        </div>
+                    </div>
+
+                    <div class="settings-card">
+                        <div class="sc-head"><div class="sc-title">Export Data</div></div>
+                        <p class="sc-desc">Download all sensor readings for the currently selected zone as a CSV file.</p>
+                        <button class="btn-export" onclick="exportCSV()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="7 10 12 15 17 10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                            Download CSV
+                        </button>
+                    </div>
+
+                    <div class="settings-card about-card">
+                        <div class="sc-head"><div class="sc-title">About AquaSmart</div></div>
+                        <div class="about-body">
+                            <div class="about-logo">
+                                <svg viewBox="0 0 24 24" fill="currentColor" width="32" height="32">
+                                    <path d="M12 2C12 2 4 10.5 4 15a8 8 0 0 0 16 0C20 10.5 12 2 12 2z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <div class="about-name">AquaSmart v2.0</div>
+                                <div class="about-desc">AI-powered precision irrigation platform using machine learning to optimize water usage and maximize crop yield.</div>
+                                <div class="about-pills">
+                                    <span class="about-pill">🤖 ML Irrigation Model</span>
+                                    <span class="about-pill">🌡️ Multi-sensor Fusion</span>
+                                    <span class="about-pill">📊 Real-time Analytics</span>
+                                    <span class="about-pill">💧 Water Optimization</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div><!-- /panel-settings -->
+
+        </main>
+    </div><!-- /app-body -->
+</div><!-- /app -->
+
+<!-- SIDEBAR OVERLAY (mobile) -->
+<div class="sb-overlay" id="sbOverlay" onclick="toggleSidebar()"></div>
+
+<!-- ADD ZONE MODAL -->
+<div id="modal" class="modal-overlay" onclick="overlayClose(event)">
+    <div class="modal-box">
+        <div class="modal-head">
+            <div class="modal-head-icon">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28">
+                    <path d="M12 2C12 2 4 10.5 4 15a8 8 0 0 0 16 0C20 10.5 12 2 12 2z"/>
+                </svg>
+            </div>
+            <div>
+                <div class="modal-title">Add Irrigation Zone</div>
+                <div class="modal-desc">Set up a new field for AI monitoring</div>
+            </div>
+            <button class="modal-close" onclick="closeModal()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+
+        <label>Zone Name</label>
+        <input id="zoneName" placeholder="e.g. North Field, Greenhouse A">
+
+        <label>Crop Type</label>
+        <select id="plant">
+            <option value="tomato">🍅  Tomato</option>
+            <option value="potato">🥔  Potato</option>
+            <option value="corn">🌽  Corn</option>
+        </select>
+
+        <label>Area (hectares)</label>
+        <input id="hectares" type="number" min="0.1" step="0.1" placeholder="e.g. 2.5">
+
+        <div class="modal-actions">
+            <button class="btn-primary" onclick="addZone()">Save Zone</button>
+            <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div id="toastArea" class="toast-area"></div>
+
+<script src="/static/script.js"></script>
+</body>
+</html>
