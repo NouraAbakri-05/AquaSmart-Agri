@@ -168,7 +168,21 @@ It allows users to:
 - Receive irrigation alerts
 - Trigger manual irrigation when necessary
 
-> 📸 Dashboard screenshots will be added here.
+### 🖥️ Main Dashboard
+
+![AquaSmart Main Dashboard](screenshots/dashboard.png)
+
+### 🌐 IoT System Monitoring
+
+![AquaSmart IoT System](screenshots/IOTSYSYSTEM.png)
+
+### 🤖 AI Irrigation Prediction
+
+![AquaSmart AI Prediction](screenshots/AI_prediction.png)
+
+### 📊 Data Analysis
+
+![AquaSmart Data Analysis](screenshots/dataanalysis.png)
 
 ---
 
